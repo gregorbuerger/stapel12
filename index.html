@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Stapel 12</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: #0f1b2d;
+      --panel2: #14243a;
+      --text: #f8fafc;
+      --muted: #a9b7c8;
+      --accent: #69e6a6;
+      --danger: #ff6b7a;
+      --card: #f8fafc;
+      --ink: #0f172a;
+      --shadow: 0 12px 30px rgba(0,0,0,.28);
+      --r: 18px;
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at top,#122845 0,#07111f 48%,#050b14 100%); color: var(--text); font-family: -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif; }
+    body { min-height: 100dvh; }
+    button { font: inherit; }
+    .app { min-height: 100dvh; padding: max(12px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:10px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .brand { font-weight:800; letter-spacing:.2px; font-size:19px; }
+    .small { color:var(--muted); font-size:12px; }
+    .btn { border:0; border-radius:14px; padding:10px 14px; background:var(--panel2); color:var(--text); font-weight:700; box-shadow:var(--shadow); }
+    .btn.primary { background:var(--accent); color:#062014; }
+    .btn:disabled { opacity:.45; }
+    .status { background:rgba(15,27,45,.85); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:9px 12px; font-size:13px; color:#dce6f2; min-height:38px; display:flex; align-items:center; }
+    .board { display:grid; grid-template-rows:auto auto 1fr auto; gap:10px; flex:1; min-height:0; }
+    .section { background:rgba(15,27,45,.68); border:1px solid rgba(255,255,255,.06); border-radius:var(--r); padding:10px; }
+    .section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px; color:var(--muted); }
+    .row { display:flex; gap:8px; align-items:flex-end; justify-content:center; }
+    .pile-wrap { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; }
+    .pile-label { font-size:10px; color:var(--muted); }
+    .card { width:58px; height:82px; border-radius:12px; background:linear-gradient(145deg,#ffffff,#e8eef6); color:var(--ink); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:27px; position:relative; box-shadow:0 8px 18px rgba(0,0,0,.24); border:2px solid rgba(255,255,255,.6); user-select:none; }
+    .card.wild { background:linear-gradient(145deg,#ffe88e,#ffb95c); }
+    .card.back { background:repeating-linear-gradient(135deg,#1e4f7a 0 8px,#173d60 8px 16px); color:#fff; border-color:#2c689a; }
+    .card.empty { background:rgba(255,255,255,.04); border:2px dashed rgba(255,255,255,.16); color:rgba(255,255,255,.25); box-shadow:none; }
+    .card.selectable { outline:3px solid rgba(105,230,166,.0); cursor:pointer; }
+    .card.selected { outline:3px solid var(--accent); transform:translateY(-5px); }
+    .count { position:absolute; right:5px; bottom:4px; font-size:10px; font-weight:800; padding:2px 5px; border-radius:999px; background:rgba(15,23,42,.82); color:#fff; }
+    .builds { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+    .build-slot { display:flex; justify-content:center; }
+    .build-slot .card { width:55px; height:78px; }
+    .discard-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+    .discard-grid .card { width:54px; height:76px; }
+    .player-grid { display:grid; grid-template-columns:74px 1fr; gap:10px; align-items:end; }
+    .stock .card { width:68px; height:94px; }
+    .hand { display:flex; gap:6px; justify-content:flex-start; overflow-x:auto; padding:4px 2px 8px; scrollbar-width:none; }
+    .hand::-webkit-scrollbar{display:none}.hand .card{flex:0 0 58px}
+    .controls { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .modal { position:fixed; inset:0; background:rgba(0,0,0,.64); display:none; align-items:center; justify-content:center; padding:22px; z-index:20; }
+    .modal.show { display:flex; }
+    .modal-card { width:min(360px,100%); background:#0e1a2b; border:1px solid rgba(255,255,255,.08); border-radius:24px; padding:22px; text-align:center; box-shadow:0 30px 80px rgba(0,0,0,.5); }
+    .modal-card h2{margin:0 0 8px;font-size:28px}.modal-card p{color:var(--muted);margin:0 0 18px}
+    @media (min-width:700px){ .app{max-width:520px;margin:0 auto;} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div><div class="brand">Stapel 12</div><div class="small">v0.1 · 1 gegen Computer</div></div>
+    <button class="btn" id="newGameBtn">Neu</button>
+  </div>
+  <div class="status" id="status">Spiel wird vorbereitet …</div>
+  <div class="board">
+    <section class="section" id="cpuSection">
+      <div class="section-title"><span>Computer</span><span id="cpuInfo"></span></div>
+      <div class="row">
+        <div class="pile-wrap stock"><div class="card back" id="cpuStock"><span class="count" id="cpuStockCount"></span></div><div class="pile-label">Vorrat</div></div>
+        <div style="flex:1">
+          <div class="discard-grid" id="cpuDiscards"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><span>Baustapel</span><span>1 → 12</span></div>
+      <div class="builds" id="builds"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><span>Deine Ablagestapel</span><span>oben spielbar</span></div>
+      <div class="discard-grid" id="playerDiscards"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-title"><span>Du</span><span id="playerInfo"></span></div>
+      <div class="player-grid">
+        <div class="pile-wrap stock"><div class="card selectable" id="playerStock"></div><div class="pile-label">Vorrat</div></div>
+        <div>
+          <div class="hand" id="hand"></div>
+          <div class="controls">
+            <button class="btn" id="cancelBtn">Auswahl lösen</button>
+            <button class="btn primary" id="endTurnBtn">Zug beenden</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="modal-card"><h2 id="modalTitle"></h2><p id="modalText"></p><button class="btn primary" id="modalBtn">Neue Partie</button></div></div>
+
+<script>
+(() => {
+  const STOCK_SIZE = 10;
+  const HAND_SIZE = 5;
+  const WILD = 0;
+
+  const el = id => document.getElementById(id);
+  const state = {
+    deck: [], builds:[[],[],[],[]],
+    player:{stock:[], hand:[], discards:[[],[],[],[]]},
+    cpu:{stock:[], hand:[], discards:[[],[],[],[]]},
+    turn:'player', selected:null, busy:false, gameOver:false
+  };
+
+  function makeDeck(){
+    const d=[];
+    for(let n=1;n<=12;n++) for(let i=0;i<12;i++) d.push(n);
+    for(let i=0;i<18;i++) d.push(WILD);
+    shuffle(d); return d;
+  }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
+  function draw(){ if(!state.deck.length) state.deck = makeDeck(); return state.deck.pop(); }
+  function refillHand(p){ while(p.hand.length < HAND_SIZE) p.hand.push(draw()); }
+  function setup(){
+    state.deck=makeDeck(); state.builds=[[],[],[],[]];
+    state.player={stock:[], hand:[], discards:[[],[],[],[]]};
+    state.cpu={stock:[], hand:[], discards:[[],[],[],[]]};
+    for(let i=0;i<STOCK_SIZE;i++){state.player.stock.push(draw());state.cpu.stock.push(draw());}
+    refillHand(state.player); refillHand(state.cpu); state.turn='player';state.selected=null;state.busy=false;state.gameOver=false;
+    hideModal(); setStatus('Dein Zug. Wähle eine Karte und dann einen Baustapel.'); render();
+  }
+  function top(a){return a.length?a[a.length-1]:null}
+  function needed(i){ return state.builds[i].length+1; }
+  function canPlay(card, i){ return card!==null && needed(i)<=12 && (card===WILD || card===needed(i)); }
+  function clearCompletedBuild(i){ if(state.builds[i].length===12) state.builds[i]=[]; }
+  function cardText(c){ return c===WILD?'★':String(c); }
+  function cardClass(c){ return 'card'+(c===WILD?' wild':''); }
+  function setStatus(t){ el('status').textContent=t; }
+
+  function renderCard(c, extra=''){
+    if(c===null) return `<div class="card empty ${extra}">·</div>`;
+    return `<div class="${cardClass(c)} ${extra}">${cardText(c)}</div>`;
+  }
+  function render(){
+    el('cpuStockCount').textContent=state.cpu.stock.length;
+    el('cpuInfo').textContent=`${state.cpu.hand.length} Handkarten`;
+    el('playerInfo').textContent=`${state.player.hand.length} Handkarten`;
+    const pst=top(state.player.stock);
+    el('playerStock').className = pst===WILD?'card wild selectable':'card selectable';
+    el('playerStock').innerHTML = pst===null?'':`${cardText(pst)}<span class="count">${state.player.stock.length}</span>`;
+    if(state.selected?.type==='stock') el('playerStock').classList.add('selected');
+
+    el('builds').innerHTML = state.builds.map((b,i)=>{
+      const c=top(b); const n=needed(i); return `<div class="build-slot" data-build="${i}">${c===null?`<div class="card empty">${n}</div>`:`<div class="card">${cardText(c)}<span class="count">${b.length}/12</span></div>`}</div>`;
+    }).join('');
+
+    el('hand').innerHTML = state.player.hand.map((c,i)=>`<div class="${cardClass(c)} selectable ${state.selected?.type==='hand'&&state.selected.index===i?'selected':''}" data-hand="${i}">${cardText(c)}</div>`).join('');
+
+    el('playerDiscards').innerHTML = state.player.discards.map((d,i)=>`<div data-pdiscard="${i}">${top(d)===null?renderCard(null,'selectable'):`<div class="${cardClass(top(d))} selectable ${state.selected?.type==='discard'&&state.selected.index===i?'selected':''}">${cardText(top(d))}<span class="count">${d.length}</span></div>`}</div>`).join('');
+    el('cpuDiscards').innerHTML = state.cpu.discards.map(d=>top(d)===null?renderCard(null):`<div class="${cardClass(top(d))}">${cardText(top(d))}<span class="count">${d.length}</span></div>`).join('');
+
+    el('endTurnBtn').disabled=state.turn!=='player'||state.busy||state.player.hand.length===0;
+  }
+
+  function getSelectedCard(){
+    const s=state.selected; if(!s) return null;
+    if(s.type==='stock') return top(state.player.stock);
+    if(s.type==='hand') return state.player.hand[s.index] ?? null;
+    if(s.type==='discard') return top(state.player.discards[s.index]);
+    return null;
+  }
+  function removeSelected(){
+    const s=state.selected; if(s.type==='stock') state.player.stock.pop();
+    else if(s.type==='hand') state.player.hand.splice(s.index,1);
+    else if(s.type==='discard') state.player.discards[s.index].pop();
+    state.selected=null;
+  }
+  function playSelected(buildIndex){
+    if(state.turn!=='player'||state.busy||state.gameOver) return;
+    const c=getSelectedCard();
+    if(c===null){ setStatus('Wähle zuerst eine Karte.'); return; }
+    if(!canPlay(c,buildIndex)){ setStatus(`Hier wird eine ${needed(buildIndex)} benötigt.`); return; }
+    state.builds[buildIndex].push(c===WILD?needed(buildIndex):c);
+    removeSelected();
+    if(state.player.stock.length===0){ render(); win('Du hast gewonnen!','Dein Vorratsstapel ist leer.'); return; }
+    clearCompletedBuild(buildIndex);
+    if(state.player.hand.length===0) refillHand(state.player);
+    render(); setStatus('Gültiger Zug. Du darfst weiterspielen oder deinen Zug beenden.');
+  }
+  function chooseDiscardAndEnd(){
+    if(state.turn!=='player'||state.busy||state.gameOver) return;
+    const s=state.selected;
+    if(!s || s.type!=='hand'){ setStatus('Zum Beenden zuerst eine Handkarte wählen, dann einen Ablagestapel antippen.'); return; }
+    setStatus('Tippe jetzt auf einen deiner vier Ablagestapel.');
+  }
+  function discardHandTo(i){
+    if(state.turn!=='player'||state.busy||state.gameOver) return;
+    const s=state.selected;
+    if(!s || s.type!=='hand') return;
+    const c=state.player.hand.splice(s.index,1)[0];
+    state.player.discards[i].push(c); state.selected=null; render(); cpuTurn();
+  }
+
+  async function cpuTurn(){
+    state.turn='cpu';state.busy=true;render();setStatus('Computer ist am Zug …');
+    await sleep(500); refillHand(state.cpu); render();
+    let safety=0, moved=true;
+    while(moved && safety++<100 && !state.gameOver){
+      moved=false;
+      const candidates=[];
+      const st=top(state.cpu.stock); if(st!==null) candidates.push({type:'stock',card:st,priority:0});
+      state.cpu.hand.forEach((c,i)=>candidates.push({type:'hand',card:c,index:i,priority:2}));
+      state.cpu.discards.forEach((d,i)=>{const c=top(d); if(c!==null)candidates.push({type:'discard',card:c,index:i,priority:1});});
+      candidates.sort((a,b)=>a.priority-b.priority);
+      outer: for(const cand of candidates){
+        for(let bi=0;bi<4;bi++) if(canPlay(cand.card,bi)){
+          const actual = cand.card===WILD?needed(bi):cand.card;
+          state.builds[bi].push(actual);
+          if(cand.type==='stock') state.cpu.stock.pop();
+          else if(cand.type==='hand') state.cpu.hand.splice(cand.index,1);
+          else state.cpu.discards[cand.index].pop();
+          if(state.cpu.stock.length===0){ render(); win('Computer gewinnt','Sein Vorratsstapel ist leer.'); return; }
+          clearCompletedBuild(bi);
+          if(state.cpu.hand.length===0) refillHand(state.cpu);
+          render(); moved=true; await sleep(280); break outer;
+        }
+      }
+    }
+    if(state.gameOver) return;
+    if(state.cpu.hand.length){
+      let idx=0; for(let i=1;i<state.cpu.hand.length;i++) if(state.cpu.hand[i]>state.cpu.hand[idx]) idx=i;
+      const c=state.cpu.hand.splice(idx,1)[0];
+      let target=0, min=Infinity; state.cpu.discards.forEach((d,i)=>{if(d.length<min){min=d.length;target=i;}});
+      state.cpu.discards[target].push(c); render(); await sleep(350);
+    }
+    refillHand(state.player); state.turn='player';state.busy=false;render();setStatus('Dein Zug. Deine Hand wurde auf 5 Karten aufgefüllt.');
+  }
+
+  function win(title,text){ state.gameOver=true;state.busy=false;state.turn='none'; showModal(title,text); }
+  function showModal(t,x){el('modalTitle').textContent=t;el('modalText').textContent=x;el('modal').classList.add('show');}
+  function hideModal(){el('modal').classList.remove('show');}
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+  el('playerStock').addEventListener('click',()=>{if(state.turn!=='player'||state.busy)return; if(top(state.player.stock)!==null){state.selected={type:'stock'};render();}});
+  el('hand').addEventListener('click',e=>{const n=e.target.closest('[data-hand]');if(!n||state.turn!=='player'||state.busy)return;state.selected={type:'hand',index:+n.dataset.hand};render();});
+  el('playerDiscards').addEventListener('click',e=>{
+    const n=e.target.closest('[data-pdiscard]'); if(!n||state.turn!=='player'||state.busy)return; const i=+n.dataset.pdiscard;
+    if(state.selected?.type==='hand' && el('status').textContent.startsWith('Tippe jetzt')){ discardHandTo(i); return; }
+    if(top(state.player.discards[i])!==null){state.selected={type:'discard',index:i};render();}
+  });
+  el('builds').addEventListener('click',e=>{const n=e.target.closest('[data-build]');if(n)playSelected(+n.dataset.build);});
+  el('cancelBtn').addEventListener('click',()=>{state.selected=null;render();setStatus('Auswahl aufgehoben.');});
+  el('endTurnBtn').addEventListener('click',chooseDiscardAndEnd);
+  el('newGameBtn').addEventListener('click',setup); el('modalBtn').addEventListener('click',setup);
+
+  setup();
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
